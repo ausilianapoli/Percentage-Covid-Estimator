@@ -23,28 +23,28 @@ class CovidPerData(Dataset):
         random.seed(1702)
         self.__adapter_transform = transforms.Compose([transforms.Resize(224), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(220), transforms.RandomRotation((-10, +10))])
+        self.__read_data()
+        self.__splitting_data()
         self.__assign_data()
         
-    def __read_labels(self):
+    def __read_data(self):
+        self.__X = glob.glob(os.path.join(self.__data_path, 'Train', '*.png'))
+        self.__labels_path = os.path.join(self.__data_path, 'Train.csv')
         if os.path.exists(self.__labels_path):
             self.__Y = pd.read_csv(self.__labels_path, header = None) #it's a dataframe 
                     
     def __assign_data(self):
         if self.__mode == 'training':
-            self.__X = glob.glob(os.path.join(self.__data_path, 'Train', '*.png'))
-            self.__labels_path = os.path.join(self.__data_path, 'Train.csv')
-            self.__read_labels()
-        elif self.__mode == 'validation':
-            self.__X = glob.glob(os.path.join(self.__data_path, 'Val', '*.png'))
-            self.__labels_path = os.path.join(self.__data_path, 'Val.csv')
-            self.__read_labels()
-        elif self.__mode == 'testing':
-            self.__X = glob.glob(os.path.join(self.__data_path, 'Test', '*.png'))
-            self.__labels_path = os.path.join(self.__data_path, 'Test.csv')
-            self.__read_labels()
+            self.__X = self.__X_training
+        elif self.__mode == 'test':
+            self.__X = self.__X_validation
 
-    def run(self):
-        self.__assign_data()
+    def __splitting_data(self):
+        validation_len = (len(self.__X) * 10) // 100
+        self.__X_training, self.__X_validation = None, None
+        idx = np.random.permutation(len(self.__X))
+        self.__X_training = self.__X[validation_len:]
+        self.__X_validation = self.__X[:validation_len]
                 
     def __getitem__(self, index):
         x = Image.open(self.__X[index]).convert('RGB')
@@ -54,24 +54,6 @@ class CovidPerData(Dataset):
         image_name = os.path.basename(self.__X[index])
         y = float(self.__Y[self.__Y[SLICE] == image_name][PERCENTAGE])
 
-        '''
-        if self.__mode == 'training':
-            if random.random() > .5:
-                x = self.__transform_flip(x)
-            if random.random() > .5:
-                x = self.__transform_zoom(x)
-            if random.random() > .5:
-                x = self.__transform_interpolate(x)
-            if random.random() > .5:
-                x = self.__transform_rotate(x)
-            if random.random() > .5:
-                x = self.__transform_contrast(x)
-            if random.random() > .5:
-                x = self.__transform_translate(x)
-        
-        for t in x:
-            self.__transform_normalize(t)
-        '''    
         return x, y
     
     def __len__(self):

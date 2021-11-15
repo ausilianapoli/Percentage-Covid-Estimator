@@ -64,24 +64,27 @@ def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir
     logging_file.close()
     
     for e in tqdm(range(epochs_done, epochs)):
-        loss_meter.reset()
-        metric_meter.reset()
-        
-        with torch.set_grad_enabled(True):
-            for i, batch in enumerate(loader):
-                x = batch[0].to(device)
-                y = batch[1].to(device)
-                
-                output = network(x.float())
-                loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+        for mode in ['train', 'test']:
+            loss_meter.reset()
+            metric_meter.reset()
+            network.train() if mode == 'train' else network.eval()
+            
+            with torch.set_grad_enabled(mode == 'train'):
+                for i, batch in enumerate(loader[mode]):
+                    x = batch[0].to(device)
+                    y = batch[1].to(device)
                     
-                metric = MAE(output.view(-1), y.view(-1))
-                loss_meter.add(loss.item(), x.shape[0])
-                metric_meter.add(metric, x.shape[0])
+                    output = network(x.float())
+                    loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
+                    
+                    if mode == 'train':
+                        optimizer.zero_grad()
+                        loss.backward()
+                        optimizer.step()
+                        
+                    metric = MAE(output.view(-1), y.view(-1))
+                    loss_meter.add(loss.item(), x.shape[0])
+                    metric_meter.add(metric, x.shape[0])
             
         scheduler.step()
         
@@ -128,8 +131,8 @@ def evaluate(network, loader):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
-parser.add_argument('--mode', type=str, help='Network mode (training, validation, testing)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnet50)') 
+#parser.add_argument('--mode', type=str, help='Network mode (training, validation, testing)')  
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnet50)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -164,15 +167,22 @@ loss_meter = AverageValueMeter()
 metric_meter = AverageValueMeter()
 save = True
 note = opt.note
-mode = opt.mode
-dataset = CovidPerData(opt.data, mode)
-loader = DataLoader(dataset, batch_size = 16, num_workers = 1, shuffle = True)
+#mode = opt.mode
+dataset_train = CovidPerData(opt.data, 'training')
+loader_train = DataLoader(dataset_train, batch_size = 16, num_workers = opt.workers, shuffle = True)
+dataset_test = CovidPerData(opt.data, 'test')
+loader_test = DataLoader(dataset_test, batch_size = 16, num_workers = opt.workers, shuffle = True)
+loader = {
+        'train' : loader_train,
+        'test': loader_test
+        }
 
-if mode == 'training':  
-    train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir, weights, save)
-elif mode == 'validation':
+
+#if mode == 'training':  
+train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir, weights, save)
+#elif mode == 'validation':
     #evaluate(network, loader)     
-    print('TODO')
-elif mode == 'testing':
-    print('TODO')         
+#    print('TODO')
+#elif mode == 'testing':
+#    print('TODO')         
                 
