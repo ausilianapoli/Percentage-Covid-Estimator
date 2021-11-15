@@ -10,6 +10,7 @@ from torch import nn
 import os
 from tqdm import tqdm
 import argparse
+from matplotlib import pyplot as plt
 
 class AverageValueMeter():
     
@@ -128,11 +129,55 @@ def evaluate(network, loader):
     print('RMSE: ', RMSE(output, y))
     print('Pearson Correlation: ', pearson_correlation(output, y))
 
+def sort_logs(logs):
+    logs = sorted(logs.items())
+    return [t[1] for t in logs]
+
+def plot_learning_curve(filename, title):
+    logs_file = open(filename, 'r')
+    logs_list = logs_file.readlines()
+    train_loss = dict()
+    train_accuracy = dict()
+    test_loss = dict()
+    test_accuracy = dict()
+    for row in logs_list:
+        epoch = int(row.split(' ')[1].split('/')[0])
+        loss = float(row.split(' ')[7])
+        accuracy = float(row.split(' ')[-1])
+        if 'train' in row: 
+            train_loss[epoch] = loss
+            train_accuracy[epoch] = accuracy
+        else:
+            test_loss[epoch] = loss
+            test_accuracy[epoch] = accuracy
+    train_loss = sort_logs(train_loss)
+    train_accuracy = sort_logs(train_accuracy)
+    test_loss = sort_logs(test_loss)
+    test_accuracy = sort_logs(test_accuracy)
+    plt.rcParams.update({'font.size': 20})
+    plt.figure(figsize = (20,8)) 
+    plt.plot(train_loss, label = 'training loss')
+    plt.plot(test_loss, label = 'validation loss')
+    plt.legend(loc = 'upper left')
+    plt.title(title)
+    plt.xticks(np.arange(0, len(train_loss) + 1, step = 100))
+    plt.grid()
+    plt.show()
+    plt.figure(figsize = (20,8)) 
+    plt.plot(train_accuracy, label = 'training metric')
+    plt.plot(test_accuracy, label = 'validation metric')
+    plt.legend(loc = 'lower right')
+    plt.title(title)
+    plt.grid()
+    plt.yticks(np.arange(0, 1.1, step=0.1))
+    plt.xticks(np.arange(0, len(train_loss) + 1, step = 100))
+    plt.show()
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 #parser.add_argument('--mode', type=str, help='Network mode (training, validation, testing)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50, plot)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -153,6 +198,9 @@ elif opt.network == 'inceptionv3':
     inception = True
 elif opt.network == 'resnext50':
     network = ResNext()
+elif opt.network == 'plot':
+    plot_learning_curve(opt.data, 'DenseNet121')
+    exit()
 criterion = nn.SmoothL1Loss()
 lr = opt.lr
 weight_decay = opt.wd
