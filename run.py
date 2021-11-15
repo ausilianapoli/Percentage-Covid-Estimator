@@ -86,13 +86,14 @@ def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir
                     loss_meter.add(loss.item(), x.shape[0])
                     metric_meter.add(metric, x.shape[0])
             
-        scheduler.step()
-        
-        logging_file = open(os.path.join(logdir, exp_name, 'console_logs.txt'), 'a')
-        logging = 'Epoch {}/{} batches {}/{} mode {} loss {:.4f} metric {:.4f}\n'.format(e + 1, epochs, i + 1, len(loader), mode, loss_meter.value(), metric_meter.value())
-        logging_file.writelines(logging)
-        logging_file.close()
-        print('\n',logging)
+            if mode == 'train':
+                scheduler.step()
+            
+            logging_file = open(os.path.join(logdir, exp_name, 'console_logs.txt'), 'a')
+            logging = 'Epoch {}/{} batches {}/{} mode {} loss {:.4f} metric {:.4f}\n'.format(e + 1, epochs, i + 1, len(loader), mode, loss_meter.value(), metric_meter.value())
+            logging_file.writelines(logging)
+            logging_file.close()
+            print('\n',logging)
             
         if save:
             torch.save({
