@@ -1,15 +1,15 @@
+from torchvision.models import inception
 from CovidPerData import CovidPerData
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 import torch
 import numpy as np
-from Model import DenseNet121
+from Model import DenseNet121, InceptionV3, ResNext
 from torch import nn
 import os
 from tqdm import tqdm
 import argparse
-import time
 
 class AverageValueMeter():
     
@@ -132,7 +132,7 @@ def evaluate(network, loader):
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 #parser.add_argument('--mode', type=str, help='Network mode (training, validation, testing)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnet50)')
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -145,10 +145,14 @@ parser.add_argument('--note', type=str, default='lr 0001 wd 0 ADAM', help='Notes
 
 opt = parser.parse_args()
 
+inception = False
 if opt.network == 'densenet121':
     network = DenseNet121()
-else:
-    print('TODO')
+elif opt.network == 'inceptionv3':
+    network = InceptionV3()
+    inception = True
+elif opt.network == 'resnext50':
+    network = ResNext()
 criterion = nn.SmoothL1Loss()
 lr = opt.lr
 weight_decay = opt.wd
@@ -168,9 +172,9 @@ metric_meter = AverageValueMeter()
 save = True
 note = opt.note
 #mode = opt.mode
-dataset_train = CovidPerData(opt.data, 'training')
+dataset_train = CovidPerData(opt.data, 'training', inception)
 loader_train = DataLoader(dataset_train, batch_size = 16, num_workers = opt.workers, shuffle = True)
-dataset_test = CovidPerData(opt.data, 'test')
+dataset_test = CovidPerData(opt.data, 'test', inception)
 loader_test = DataLoader(dataset_test, batch_size = 16, num_workers = opt.workers, shuffle = True)
 loader = {
         'train' : loader_train,

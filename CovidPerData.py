@@ -13,7 +13,7 @@ SUBJECT = 2
 
 class CovidPerData(Dataset):
     
-    def __init__(self, data_path = None, mode = 'training'):
+    def __init__(self, data_path = None, mode = 'training', inception = False):
         self.__data_path = data_path
         self.__mode = mode
         self.__labels_path = None
@@ -21,7 +21,8 @@ class CovidPerData(Dataset):
         self.__Y = None
         np.random.seed(1702)
         random.seed(1702)
-        self.__adapter_transform = transforms.Compose([transforms.Resize(224), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+        resize = 299 if inception else 224
+        self.__adapter_transform = transforms.Compose([transforms.Resize(resize), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(220), transforms.RandomRotation((-10, +10))])
         self.__read_data()
         self.__splitting_data()
