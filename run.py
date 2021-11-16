@@ -201,7 +201,7 @@ elif opt.network == 'resnext50':
 elif opt.network == 'plot':
     plot_learning_curve(opt.data, 'DenseNet121')
     exit()
-criterion = nn.SmoothL1Loss()
+criterion = nn.SmoothL1Loss(beta = 15)
 lr = opt.lr
 weight_decay = opt.wd
 optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
