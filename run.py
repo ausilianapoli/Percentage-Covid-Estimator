@@ -1,7 +1,7 @@
 from torchvision.models import inception
 from CovidPerData import CovidPerData
 from torch.utils.data import DataLoader
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 import torch
 import numpy as np
@@ -205,6 +205,7 @@ criterion = nn.SmoothL1Loss(beta = 15)
 lr = opt.lr
 weight_decay = opt.wd
 optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
+#optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
 epochs = opt.epochs
 exp_name = opt.expname
 logdir = opt.logs
