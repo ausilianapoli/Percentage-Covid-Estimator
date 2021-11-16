@@ -23,7 +23,7 @@ class CovidPerData(Dataset):
         random.seed(1702)
         resize = 299 if inception else 224
         self.__adapter_transform = transforms.Compose([transforms.Resize(resize), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(220), transforms.RandomRotation((-10, +10))])
+        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(resize-4), transforms.Resize(resize), transforms.RandomRotation((-10, +10))])
         self.__read_data()
         self.__splitting_data()
         self.__assign_data()

@@ -21,7 +21,7 @@ class InceptionV3(nn.Module):
 
     def __init__(self, dropout = 0.5, momentum = 0.9):
         super(InceptionV3, self).__init__()
-        self.model = models.inception_v3(pretrained = True, progress = False)
+        self.model = models.inception_v3(pretrained = True, progress = False, aux_logits = False)
         self.model.fc = nn.Linear(2048, 1) #changing last layer
         self.sigmoid = nn.Sigmoid()
         
