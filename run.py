@@ -82,6 +82,10 @@ def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
+                        try:
+                            criterion.delta -= 0.5
+                        except:
+                            criterion.beta -= 0.5
                         
                     metric = MAE(output.view(-1), y.view(-1))
                     loss_meter.add(loss.item(), x.shape[0])
