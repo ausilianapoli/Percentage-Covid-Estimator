@@ -24,11 +24,12 @@ class CovidPerData(Dataset):
         random.seed(1702)
         resize = 299 if inception else 224
         self.__adapter_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(resize-20), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
+        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(resize-4), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
         self.__read_data()
         self.__splitting_data()
         self.__extract_data()
         self.__assign_data()
+        #self.saveT = transforms.ToPILImage()
         
     def __read_data(self):
         self.__X = glob.glob(os.path.join(self.__data_path, 'Train', '*.png'))
@@ -62,10 +63,12 @@ class CovidPerData(Dataset):
         #x = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         #x = Image.fromarray(x)
         x = self.__adapter_transform(x)
-        if self.__mode == 'training':
-            x = self.__data_augmentation(x)
         image_name = os.path.basename(self.__X[index])
         y = self.__Y[image_name]
+        if self.__mode == 'training':
+            x = self.__data_augmentation(x)
+            #img = self.saveT(x)
+            #img.save('aug' + image_name)
         
         return x, y
     
