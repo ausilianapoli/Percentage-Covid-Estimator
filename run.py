@@ -199,9 +199,14 @@ elif opt.network == 'inceptionv3':
 elif opt.network == 'resnext50':
     network = ResNext()
 elif opt.network == 'plot':
-    plot_learning_curve(opt.data, 'DenseNet121')
+    plot_learning_curve(opt.data, 'NN')
     exit()
-criterion = nn.SmoothL1Loss(beta = 15)
+
+criterion_parameter = 15
+try:
+    criterion = nn.HuberLoss(delta = criterion_parameter)
+except:
+    criterion = nn.SmoothL1Loss(beta = criterion_parameter)
 lr = opt.lr
 weight_decay = opt.wd
 optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
