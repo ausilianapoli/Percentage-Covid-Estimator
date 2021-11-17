@@ -46,7 +46,10 @@ def pearson_correlation(predictions, gt):
     coefficient = torch.sum(v_predictions * v_gt) / (torch.sqrt(torch.sum(v_predictions ** 2)) * torch.sqrt(torch.sum(v_gt ** 2)))  
     
 
-def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir, weights, save):
+def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
+    loss_meter = AverageValueMeter()
+    metric_meter = AverageValueMeter()
+    
     epochs_done = 0
     scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
     if weights != '':
@@ -82,10 +85,6 @@ def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
-                        try:
-                            criterion.delta -= 0.5
-                        except:
-                            criterion.beta -= 0.5
                         
                     metric = MAE(output.view(-1), y.view(-1))
                     loss_meter.add(loss.item(), x.shape[0])
@@ -98,6 +97,12 @@ def train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir
             print('\n',logging)
 
         scheduler.step()
+        try:
+            if criterion.delta > 1:
+                criterion.delta -= 0.5
+        except:
+            if criterion.beta > 1:
+                criterion.beta -= 0.5
             
         if save:
             torch.save({
@@ -218,6 +223,7 @@ optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
 epochs = opt.epochs
 exp_name = opt.expname
 logdir = opt.logs
+note = opt.note
 weights = opt.weights
 if weights != '':
     print('Use model from checkpoint: ', os.path.basename(weights))
@@ -225,15 +231,11 @@ if weights != '':
     network.load_state_dict(checkpoint['weights'])
 device = "cuda" if torch.cuda.is_available() else "cpu"
 network.to(device)
-loss_meter = AverageValueMeter()
-metric_meter = AverageValueMeter()
 save = True
-note = opt.note
-#mode = opt.mode
 dataset_train = CovidPerData(opt.data, 'training', inception)
-loader_train = DataLoader(dataset_train, batch_size = 16, num_workers = opt.workers, shuffle = True)
+loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
 dataset_test = CovidPerData(opt.data, 'test', inception)
-loader_test = DataLoader(dataset_test, batch_size = 16, num_workers = opt.workers, shuffle = True)
+loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
 loader = {
         'train' : loader_train,
         'test': loader_test
@@ -241,7 +243,7 @@ loader = {
 
 
 #if mode == 'training':  
-train(network, loader, criterion, lr, weight_decay, epochs, exp_name, logdir, weights, save)
+train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
 #elif mode == 'validation':
     #evaluate(network, loader)     
 #    print('TODO')
