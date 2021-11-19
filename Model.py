@@ -15,7 +15,7 @@ class DenseNet121(nn.Module):
         
     def forward(self, x):
         x = self.model(x)
-        return self.sigmoid(x)
+        return x#self.sigmoid(x)
 
 class InceptionV3(nn.Module):
 
@@ -27,7 +27,7 @@ class InceptionV3(nn.Module):
         
     def forward(self, x):
         x = self.model(x)
-        return self.sigmoid(x)
+        return x#self.sigmoid(x)
 
 class ResNext(nn.Module):
 
@@ -39,4 +39,4 @@ class ResNext(nn.Module):
         
     def forward(self, x):
         x = self.model(x)
-        return self.sigmoid(x)
+        return x#self.sigmoid(x)

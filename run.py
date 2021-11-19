@@ -1,4 +1,3 @@
-from torchvision.models import inception
 from CovidPerData import CovidPerData
 from torch.utils.data import DataLoader
 from torch.optim import Adam, SGD
@@ -11,6 +10,7 @@ import os
 from tqdm import tqdm
 import argparse
 from matplotlib import pyplot as plt
+import csv
 
 class AverageValueMeter():
     
@@ -113,30 +113,24 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                 }, os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, e + 1))
             
 
-def evaluate(network, loader):
-    
+def predict(network, loader):
     network.eval()
-    
-    predictions, labels = [], []
+    results = dict()
     with torch.set_grad_enabled(False):
         for i, batch in enumerate(loader):
             print('Processing batch: {}/{}'.format(i + 1, len(loader)))
             x = batch[0].to(device)
-            y = batch[1].to(device)
+            y = batch[1]
             
             output = network(x.float())
-            preds = output.view(-1)
-            labs = y.view(-1)
-                        
-            predictions.extend(list(preds))
-            labels.extend(list(labs))
-            
-    predictions = np.array(predictions)
-    labels = np.array(labels)
+            results[y[0].replace("'", "")] = output.item()
 
-    print('MAE: ', MAE(output, y))
-    print('RMSE: ', RMSE(output, y))
-    print('Pearson Correlation: ', pearson_correlation(output, y))
+    csv.register_dialect('myDialect', delimiter = '/', quoting=csv.QUOTE_NONE)
+    with open('predictions.csv', 'w') as f:
+        writer = csv.writer(f, dialect='myDialect')
+        for key in results.keys():
+           writer.writerow((key, str(results[key])))
+
 
 def sort_logs(logs):
     logs = sorted(logs.items())
@@ -167,26 +161,26 @@ def plot_learning_curve(filename, title):
     plt.figure(figsize = (20,8)) 
     plt.plot(train_loss, label = 'training loss')
     plt.plot(test_loss, label = 'validation loss')
-    plt.legend(loc = 'upper left')
+    plt.legend(loc = 'upper right')
     plt.title(title)
-    plt.xticks(np.arange(0, len(train_loss) + 1, step = 100))
+    plt.xticks(np.arange(0, len(train_loss) + 1, step = 5))
     plt.grid()
     plt.show()
     plt.figure(figsize = (20,8)) 
     plt.plot(train_accuracy, label = 'training metric')
     plt.plot(test_accuracy, label = 'validation metric')
-    plt.legend(loc = 'lower right')
+    plt.legend(loc = 'upper right')
     plt.title(title)
     plt.grid()
-    plt.yticks(np.arange(0, 1.1, step=0.1))
-    plt.xticks(np.arange(0, len(train_loss) + 1, step = 100))
+    #plt.yticks(np.arange(0, 1.1, step=0.1))
+    plt.xticks(np.arange(0, len(train_loss) + 1, step = 5))
     plt.show()
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
-#parser.add_argument('--mode', type=str, help='Network mode (training, validation, testing)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50, plot)')
+parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot)')  
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -199,54 +193,51 @@ parser.add_argument('--note', type=str, default='lr 0001 wd 0 ADAM', help='Notes
 
 opt = parser.parse_args()
 
-inception = False
-if opt.network == 'densenet121':
-    network = DenseNet121()
-elif opt.network == 'inceptionv3':
-    network = InceptionV3()
-    inception = True
-elif opt.network == 'resnext50':
-    network = ResNext()
-elif opt.network == 'plot':
+if opt.action == 'plot':
     plot_learning_curve(opt.data, 'NN')
-    exit()
-
-criterion_parameter = 15
-try:
-    criterion = nn.HuberLoss(delta = criterion_parameter)
-except:
-    criterion = nn.SmoothL1Loss(beta = criterion_parameter)
-lr = opt.lr
-weight_decay = opt.wd
-#optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
-optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
-epochs = opt.epochs
-exp_name = opt.expname
-logdir = opt.logs
-note = opt.note
-weights = opt.weights
-if weights != '':
-    print('Use model from checkpoint: ', os.path.basename(weights))
-    checkpoint = torch.load(weights)
-    network.load_state_dict(checkpoint['weights'])
-device = "cuda" if torch.cuda.is_available() else "cpu"
-network.to(device)
-save = True
-dataset_train = CovidPerData(opt.data, 'training', inception)
-loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-dataset_test = CovidPerData(opt.data, 'test', inception)
-loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-loader = {
-        'train' : loader_train,
-        'test': loader_test
-        }
-
-
-#if mode == 'training':  
-train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
-#elif mode == 'validation':
-    #evaluate(network, loader)     
-#    print('TODO')
-#elif mode == 'testing':
-#    print('TODO')         
-                
+else:
+    inception = False
+    if opt.network == 'densenet121':
+        network = DenseNet121()
+    elif opt.network == 'inceptionv3':
+        network = InceptionV3()
+        inception = True
+    elif opt.network == 'resnext50':
+        network = ResNext()
+    weights = opt.weights
+    if weights != '':
+        print('Use model from checkpoint: ', os.path.basename(weights))
+        checkpoint = torch.load(weights)
+        network.load_state_dict(checkpoint['weights'])
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    network.to(device)
+    if opt.action == 'training':
+        criterion_parameter = 15
+        try:
+            criterion = nn.HuberLoss(delta = criterion_parameter)
+        except:
+            criterion = nn.SmoothL1Loss(beta = criterion_parameter)
+        lr = opt.lr
+        weight_decay = opt.wd
+        #optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
+        optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
+        epochs = opt.epochs
+        exp_name = opt.expname
+        logdir = opt.logs
+        note = opt.note
+        save = True
+        dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception)
+        loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
+        dataset_test = CovidPerData(opt.data, mode = 'test', inception = inception)
+        loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
+        loader = {
+                'train' : loader_train,
+                'test': loader_test
+                }
+        train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+    elif opt.action == 'predict':
+        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True)
+        loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
+        predict(network, loader)
+    elif opt.action == 'evaluate':
+        print('TODO')
