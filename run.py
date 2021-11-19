@@ -221,8 +221,8 @@ else:
             criterion = nn.SmoothL1Loss(beta = criterion_parameter)
         lr = opt.lr
         weight_decay = opt.wd
-        #optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
-        optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
+        optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
+        #optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
         epochs = opt.epochs
         note = opt.note
         save = True
