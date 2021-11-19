@@ -14,7 +14,7 @@ SUBJECT = 2
 
 class CovidPerData(Dataset):
     
-    def __init__(self, data_path = None, mode = 'training', inception = False):
+    def __init__(self, data_path = None, mode = 'training', inception = False, predict = False):
         self.__data_path = data_path
         self.__mode = mode
         self.__labels_path = None
@@ -22,20 +22,25 @@ class CovidPerData(Dataset):
         self.__Y = None
         np.random.seed(1702)
         random.seed(1702)
-        resize = 299 if inception else 224
+        #resize = 299 if inception else 224
+        self.__predict = predict
         self.__adapter_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(resize-4), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
+        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
         self.__read_data()
-        self.__splitting_data()
-        self.__extract_data()
-        self.__assign_data()
-        #self.saveT = transforms.ToPILImage()
+        if self.__mode == 'training' or self.__mode == 'test':
+            self.__extract_data()
+            self.__splitting_data()
+            self.__assign_data()
         
     def __read_data(self):
-        self.__X = glob.glob(os.path.join(self.__data_path, 'Train', '*.png'))
-        self.__labels_path = os.path.join(self.__data_path, 'Train.csv')
+        if self.__mode == 'training' or self.__mode == 'test':
+            self.__X = glob.glob(os.path.join(self.__data_path, 'Train', '*.png'))
+            self.__labels_path = os.path.join(self.__data_path, 'Train.csv')
+        elif self.__mode == 'evaluate':
+            self.__X = glob.glob(os.path.join(self.__data_path, 'Val', '*.png'))
+            self.__labels_path = os.path.join(self.__data_path, 'Val.csv')
         if os.path.exists(self.__labels_path):
-            self.__Y = pd.read_csv(self.__labels_path, header = None) #it's a dataframe 
+            self.__Y = pd.read_csv(self.__labels_path, header = None) #it's a dataframe
 
     def __extract_data(self):
         slices = self.__Y[SLICE].values
@@ -63,16 +68,15 @@ class CovidPerData(Dataset):
         #x = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         #x = Image.fromarray(x)
         x = self.__adapter_transform(x)
-        image_name = os.path.basename(self.__X[index])
-        y = self.__Y[image_name]
         if self.__mode == 'training':
             x = self.__data_augmentation(x)
-            #img = self.saveT(x)
-            #img.save('aug' + image_name)
+        image_name = os.path.basename(self.__X[index])
+        if self.__predict:
+            y = image_name
+        else:
+            y = self.__Y[image_name]
         
         return x, y
     
     def __len__(self):
         return len(self.__X)
-        
-        
