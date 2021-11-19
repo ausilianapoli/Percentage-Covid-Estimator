@@ -113,7 +113,7 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                 }, os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, e + 1))
             
 
-def predict(network, loader):
+def predict(network, loader, logdir, exp_name):
     network.eval()
     results = dict()
     with torch.set_grad_enabled(False):
@@ -125,8 +125,8 @@ def predict(network, loader):
             output = network(x.float())
             results[y[0].replace("'", "")] = output.item()
 
-    csv.register_dialect('myDialect', delimiter = '/', quoting=csv.QUOTE_NONE)
-    with open('predictions.csv', 'w') as f:
+    csv.register_dialect('myDialect', delimiter = ',', quoting=csv.QUOTE_NONE)
+    with open(os.path.join(logdir, exp_name, 'predictions.csv'), 'w') as f:
         writer = csv.writer(f, dialect='myDialect')
         for key in results.keys():
            writer.writerow((key, str(results[key])))
@@ -211,6 +211,8 @@ else:
         network.load_state_dict(checkpoint['weights'])
     device = "cuda" if torch.cuda.is_available() else "cpu"
     network.to(device)
+    exp_name = opt.expname
+    logdir = opt.logs
     if opt.action == 'training':
         criterion_parameter = 15
         try:
@@ -222,8 +224,6 @@ else:
         #optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
         optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
         epochs = opt.epochs
-        exp_name = opt.expname
-        logdir = opt.logs
         note = opt.note
         save = True
         dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception)
@@ -238,6 +238,6 @@ else:
     elif opt.action == 'predict':
         dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
-        predict(network, loader)
+        predict(network, loader, logdir, exp_name)
     elif opt.action == 'evaluate':
         print('TODO')
