@@ -190,6 +190,8 @@ parser.add_argument('--wd', type=float, default=0.0, help='Weight decay')
 parser.add_argument('--workers', type=int, default=8, help='Workers')
 parser.add_argument('--expname', type=str, default='exp', help='Experiment name')
 parser.add_argument('--note', type=str, default='lr 0001 wd 0 ADAM', help='Notes for logging file')
+parser.add_argument('--he', action = 'store_true', help = 'If True, apply HE preprocessing')
+parser.add_argument('--clahe', action = 'store_true', help = 'If True, apply CLAHE preprocessing')
 
 opt = parser.parse_args()
 
@@ -219,16 +221,17 @@ else:
             criterion = nn.HuberLoss(delta = criterion_parameter)
         except:
             criterion = nn.SmoothL1Loss(beta = criterion_parameter)
+        #criterion = nn.L1Loss()
         lr = opt.lr
         weight_decay = opt.wd
-        optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
-        #optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
+        #optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
+        optimizer = SGD(network.parameters(), lr = lr, weight_decay = weight_decay)
         epochs = opt.epochs
         note = opt.note
         save = True
-        dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception)
+        dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
         loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-        dataset_test = CovidPerData(opt.data, mode = 'test', inception = inception)
+        dataset_test = CovidPerData(opt.data, mode = 'test', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
         loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
         loader = {
                 'train' : loader_train,
@@ -236,7 +239,7 @@ else:
                 }
         train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
     elif opt.action == 'predict':
-        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True)
+        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
         predict(network, loader, logdir, exp_name)
     elif opt.action == 'evaluate':

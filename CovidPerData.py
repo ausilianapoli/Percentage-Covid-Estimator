@@ -14,12 +14,14 @@ SUBJECT = 2
 
 class CovidPerData(Dataset):
     
-    def __init__(self, data_path = None, mode = 'training', inception = False, predict = False):
+    def __init__(self, data_path = None, mode = 'training', inception = False, predict = False, he_processing = False, clahe_processing = False):
         self.__data_path = data_path
         self.__mode = mode
         self.__labels_path = None
         self.__X = None
         self.__Y = None
+        self.__he_processing = he_processing
+        self.__clahe_processing = clahe_processing
         np.random.seed(1702)
         random.seed(1702)
         #resize = 299 if inception else 224
@@ -60,13 +62,27 @@ class CovidPerData(Dataset):
         idx = np.random.permutation(len(self.__X))
         self.__X_training = self.__X[validation_len:]
         self.__X_validation = self.__X[:validation_len]
+
+    def __HE(self, img):
+        new_img = np.zeros(img.shape)
+        for i in range(img.shape[2]):
+            new_img[:,:,i] = cv2.equalizeHist(img[:,:,i])
+        return np.uint8(new_img)
+
+    def __CLAHE(self, img):
+        new_img = np.zeros(img.shape)
+        clahe = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8,8))
+        for i in range(img.shape[2]):
+            new_img[:,:,i] = clahe.apply(img[:,:,i])
+        return np.uint8(new_img)
                 
     def __getitem__(self, index):
-        x = Image.open(self.__X[index]).convert('RGB')
-        #x = cv2.imread(self.__X[index])
-        #x = np.uint8(cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX)) #histogram equalization
-        #x = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        #x = Image.fromarray(x)
+        x = cv2.imread(self.__X[index])
+        if self.__he_processing:
+            x = self.__HE(x)
+        elif self.__clahe_processing:
+            x = self.__CLAHE(x)
+        x = Image.fromarray(x)
         x = self.__adapter_transform(x)
         if self.__mode == 'training':
             x = self.__data_augmentation(x)
