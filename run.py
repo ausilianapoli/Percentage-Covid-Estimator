@@ -55,7 +55,12 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
     if weights != '':
         optimizer.load_state_dict(checkpoint['optimizer'])
         scheduler.load_state_dict(checkpoint['scheduler'])
-        epochs_done = checkpoint['epochs'] + 1 #epochs done in previous training phases     
+        epochs_done = checkpoint['epochs'] + 1 #epochs done in previous training phases
+        criterion_parameter = checkpoint['criterion']
+        try:
+            criterion.delta = criterion_parameter
+        except:
+            criterion.beta = criterion_parameter
     
     try:
         os.makedirs(os.path.join(logdir, exp_name))
@@ -100,16 +105,19 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
         try:
             if criterion.delta > 1:
                 criterion.delta -= 0.5
+                criterion_parameter = criterion.delta
         except:
             if criterion.beta > 1:
                 criterion.beta -= 0.5
+                criterion_parameter = criterion.beta
             
         if save:
             torch.save({
                     'epochs': e,
                     'weights': network.state_dict(),
                     'optimizer': optimizer.state_dict(),
-                    'scheduler': scheduler.state_dict()
+                    'scheduler': scheduler.state_dict(),
+                    'criterion': criterion_parameter
                 }, os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, e + 1))
             
 
