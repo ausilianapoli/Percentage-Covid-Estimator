@@ -7,6 +7,7 @@ import random
 import pandas as pd
 from PIL import Image
 import cv2
+import copy
 
 SLICE = 0
 PERCENTAGE = 1
@@ -20,6 +21,7 @@ class CovidPerData(Dataset):
         self.__labels_path = None
         self.__X = None
         self.__Y = None
+        self.__subjects = None
         self.__he_processing = he_processing
         self.__clahe_processing = clahe_processing
         np.random.seed(1702)
@@ -47,8 +49,11 @@ class CovidPerData(Dataset):
     def __extract_data(self):
         slices = self.__Y[SLICE].values
         percentages = self.__Y[PERCENTAGE].values
-        data = {k:v for k,v in zip(slices, percentages)}
-        self.__Y = data
+        subjects = self.__Y[SUBJECT].values
+        data_dict = {k:v for k,v in zip(slices, percentages)}
+        subject_dict = {k:v for k,v in zip(slices, subjects)}
+        self.__Y = data_dict
+        self.__subjects = subject_dict
                     
     def __assign_data(self):
         if self.__mode == 'training':
@@ -56,12 +61,20 @@ class CovidPerData(Dataset):
         elif self.__mode == 'test':
             self.__X = self.__X_validation
 
-    def __splitting_data(self):
+    def __splitting_data(self): #to have all slices of one subject in only set
         validation_len = (len(self.__X) * 10) // 100
         self.__X_training, self.__X_validation = None, None
-        idx = np.random.permutation(len(self.__X))
-        self.__X_training = self.__X[validation_len:]
-        self.__X_validation = self.__X[:validation_len]
+        dirname = os.path.dirname(self.__X[0])
+        subjects = np.unique(list(self.__subjects.values()))
+        self.__X_validation = []
+        subjects_copy = copy.deepcopy(self.__subjects)
+        while len(self.__X_validation) < validation_len:
+            random_subject = subjects[np.random.randint(0, len(subjects))]
+            for k,v in subjects_copy.items():
+                if v == random_subject:
+                    self.__X_validation.append(os.path.join(dirname,k))
+                    self.__subjects.pop(k)
+        self.__X_training = list(map(lambda x: os.path.join(dirname, x), list(self.__subjects.keys())))
 
     def __HE(self, img):
         new_img = np.zeros(img.shape)
