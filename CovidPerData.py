@@ -61,9 +61,12 @@ class CovidPerData(Dataset):
         elif self.__mode == 'test':
             self.__X = self.__X_validation
 
-    def __splitting_data(self): #to have all slices of one subject in only set
+    def __splitting_data(self): 
         validation_len = (len(self.__X) * 10) // 100
         self.__X_training, self.__X_validation = None, None
+        self.__X_training = self.__X[validation_len:]
+        self.__X_validation = self.__X[:validation_len]
+        '''#to have all slices of one subject in only set
         dirname = os.path.dirname(self.__X[0])
         subjects = np.unique(list(self.__subjects.values()))
         self.__X_validation = []
@@ -75,6 +78,7 @@ class CovidPerData(Dataset):
                     self.__X_validation.append(os.path.join(dirname,k))
                     self.__subjects.pop(k)
         self.__X_training = list(map(lambda x: os.path.join(dirname, x), list(self.__subjects.keys())))
+        '''
 
     def __HE(self, img):
         new_img = np.zeros(img.shape)
