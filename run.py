@@ -225,10 +225,10 @@ else:
     logdir = opt.logs
     if opt.action == 'training':
         criterion_parameter = 15
-        try:
-            criterion = nn.HuberLoss(delta = criterion_parameter)
-        except:
-            criterion = nn.SmoothL1Loss(beta = criterion_parameter)
+        #try:
+        #    criterion = nn.HuberLoss(delta = criterion_parameter)
+        #except:
+        criterion = nn.SmoothL1Loss(beta = criterion_parameter)
         #criterion = nn.L1Loss()
         lr = opt.lr
         weight_decay = opt.wd
