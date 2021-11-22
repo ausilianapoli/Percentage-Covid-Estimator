@@ -224,12 +224,12 @@ else:
     exp_name = opt.expname
     logdir = opt.logs
     if opt.action == 'training':
-        criterion_parameter = 15
-        #try:
-        #    criterion = nn.HuberLoss(delta = criterion_parameter)
-        #except:
-        criterion = nn.SmoothL1Loss(beta = criterion_parameter)
-        #criterion = nn.L1Loss()
+        criterion_parameter = 25
+        try:
+            criterion = nn.HuberLoss(delta = criterion_parameter)
+        except:
+            criterion = nn.SmoothL1Loss(beta = criterion_parameter)
+        criterion = nn.L1Loss()
         lr = opt.lr
         weight_decay = opt.wd
         #optimizer = Adam(network.parameters(), lr = lr, weight_decay = weight_decay)
