@@ -17,32 +17,16 @@ class DenseNet121(nn.Module):
         x = self.model(x)
         return x#self.sigmoid(x)
 
-class InceptionV3B(nn.Module):
+class InceptionV3(nn.Module):
 
     def __init__(self, dropout = 0.5, momentum = 0.9):
-        super(InceptionV3B, self).__init__()
+        super(InceptionV3, self).__init__()
         self.model = models.inception_v3(pretrained = True, progress = False, aux_logits = False)
         self.model.fc = nn.Linear(98304, 1) #changing last layer
-        modules = list(self.model.children())
-        self.branches = nn.Sequential(*modules[:7])
-        self.body = nn.Sequential(*modules[7:])
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, x):
-        #x = self.model(x)
-        features = []
-        for item in x:
-            features.append(self.branches(item))
-            #print(self.branches(item).shape)
-        features = torch.cat(features, 0)
-        #print(features.shape)
-        #mean = torch.mean(features, 0)
-        #print(mean)
-        #features_no = self.branches(x[0])
-        #features_he = self.branches(x[1])
-        #features_clahe = self.branches(x[2])
-        #mean = torch.mean(features_no, features_he, features_clahe)
-        x = self.body(features)
+        x = self.model(x)
         return x
 
 class ResNext(nn.Module):

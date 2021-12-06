@@ -223,8 +223,8 @@ else:
     branches = False
     if opt.network == 'densenet121':
         network = DenseNet121()
-    elif opt.network == 'inceptionv3b':
-        network = InceptionV3Branches()
+    elif opt.network == 'inceptionv3':
+        network = InceptionV3()
         inception = True
     elif opt.network == 'resnext50':
         network = ResNext()
