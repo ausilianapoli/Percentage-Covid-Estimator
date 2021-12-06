@@ -4,7 +4,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 import torch
 import numpy as np
-from Model import DenseNet121, InceptionV3B, ResNext
+from Model import DenseNet121, InceptionV3, ResNext, InceptionV3Branches
 from torch import nn
 import os
 from tqdm import tqdm
@@ -80,13 +80,17 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
             
             with torch.set_grad_enabled(mode == 'train'):
                 for i, batch in enumerate(loader[mode]):
-                    #x = batch[0].to(device)
-                    x = []
-                    for item in batch[0]:
-                        x.append(item.to(device))
-                    y = batch[1].to(device)
-                    
-                    output = network(x)
+                    print(batch.shape)
+                    if batch.shape[0] == 2:
+                        x = batch[0].to(device)
+                        y = batch[1].to(device)
+                        output = network(x.float())
+                    else:
+                        x = batch[0].to(device)
+                        x_he = batch[1].to(device)
+                        x_clahe = batch[2].to(device)
+                        y = batch[3].to(device)
+                        output = network(x.float(), x_he.float(), x_clahe.float())
                     loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
                     
                     if mode == 'train':
@@ -130,10 +134,17 @@ def predict(network, loader, logdir, exp_name):
     with torch.set_grad_enabled(False):
         for i, batch in enumerate(loader):
             print('Processing batch: {}/{}'.format(i + 1, len(loader)))
-            x = batch[0].to(device)
-            y = batch[1]
-            
-            output = network(x.float())
+            if batch.shape[0] == 2:
+                x = batch[0].to(device)
+                y = batch[1]
+                output = network(x.float())
+            else:
+                x = batch[0].to(device)
+                x_he = batch[1].to(device)
+                x_clahe = batch[2].to(device)
+                y = batch[3]
+                output = network(x.float(), x_he.float(), x_clahe.float())
+
             results[y[0].replace("'", "")] = output.item()
 
     csv.register_dialect('myDialect', delimiter = ',', quoting=csv.QUOTE_NONE)
@@ -191,7 +202,7 @@ def plot_learning_curve(filename, title):
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50, inceptionv3b)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -209,14 +220,17 @@ opt = parser.parse_args()
 if opt.action == 'plot':
     plot_learning_curve(opt.data, 'NN')
 else:
-    inception = False
+    branches = False
     if opt.network == 'densenet121':
         network = DenseNet121()
     elif opt.network == 'inceptionv3b':
-        network = InceptionV3B()
+        network = InceptionV3Branches()
         inception = True
     elif opt.network == 'resnext50':
         network = ResNext()
+    elif opt.network == 'inceptionv3b':
+        network = InceptionV3Branches()
+        branches = True
     weights = opt.weights
     if weights != '':
         print('Use model from checkpoint: ', os.path.basename(weights))
@@ -227,7 +241,7 @@ else:
     exp_name = opt.expname
     logdir = opt.logs
     if opt.action == 'training':
-        criterion_parameter = 25
+        criterion_parameter = 15
         try:
             criterion = nn.HuberLoss(delta = criterion_parameter)
         except:
@@ -240,9 +254,9 @@ else:
         epochs = opt.epochs
         note = opt.note
         save = True
-        dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset_train = CovidPerData(opt.data, mode = 'training', branches = branches, he_processing = opt.he, clahe_processing = opt.clahe)
         loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-        dataset_test = CovidPerData(opt.data, mode = 'test', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset_test = CovidPerData(opt.data, mode = 'test', branches = branches, he_processing = opt.he, clahe_processing = opt.clahe)
         loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
         loader = {
                 'train' : loader_train,
@@ -250,7 +264,7 @@ else:
                 }
         train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
     elif opt.action == 'predict':
-        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset = CovidPerData(opt.data, mode = 'evaluate', branches = branches, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
         predict(network, loader, logdir, exp_name)
     elif opt.action == 'evaluate':

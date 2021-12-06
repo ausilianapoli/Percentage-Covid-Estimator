@@ -16,7 +16,7 @@ SUBJECT = 2
 
 class CovidPerData(Dataset):
     
-    def __init__(self, data_path = None, mode = 'training', inception = False, predict = False, he_processing = False, clahe_processing = False):
+    def __init__(self, data_path = None, mode = 'training', branches = False, predict = False, he_processing = False, clahe_processing = False):
         self.__data_path = data_path
         self.__mode = mode
         self.__labels_path = None
@@ -25,6 +25,7 @@ class CovidPerData(Dataset):
         self.__subjects = None
         self.__he_processing = he_processing
         self.__clahe_processing = clahe_processing
+        self.__branches = branches
         np.random.seed(1702)
         random.seed(1702)
         #resize = 299 if inception else 224
@@ -62,12 +63,9 @@ class CovidPerData(Dataset):
         elif self.__mode == 'test':
             self.__X = self.__X_validation
 
-    def __splitting_data(self): 
+    def __splitting_data(self): #to have all slices of one subject in only set
         validation_len = (len(self.__X) * 10) // 100
         self.__X_training, self.__X_validation = None, None
-        self.__X_training = self.__X[validation_len:]
-        self.__X_validation = self.__X[:validation_len]
-        '''#to have all slices of one subject in only set
         dirname = os.path.dirname(self.__X[0])
         subjects = np.unique(list(self.__subjects.values()))
         self.__X_validation = []
@@ -79,7 +77,6 @@ class CovidPerData(Dataset):
                     self.__X_validation.append(os.path.join(dirname,k))
                     self.__subjects.pop(k)
         self.__X_training = list(map(lambda x: os.path.join(dirname, x), list(self.__subjects.keys())))
-        '''
 
     def __HE(self, img):
         new_img = np.zeros(img.shape)
@@ -95,33 +92,33 @@ class CovidPerData(Dataset):
         return np.uint8(new_img)
                 
     def __getitem__(self, index):
-        x = cv2.imread(self.__X[index])
-        x_list = []
-        x_list.append(x)
-        x_list.append(self.__HE(x))
-        x_list.append(self.__CLAHE(x))
-        for i in range(len(x_list)):
-            x_list[i] = Image.fromarray(x_list[i])
-            x_list[i] = self.__adapter_transform(x_list[i])
-            if self.__mode == 'training':
-                x_list[i] = self.__data_augmentation(x_list[i])
-        '''
-        if self.__he_processing:
-            x = self.__HE(x)
-        elif self.__clahe_processing:
-            x = self.__CLAHE(x)
-        x = Image.fromarray(x)
-        x = self.__adapter_transform(x)
-        if self.__mode == 'training':
-            x = self.__data_augmentation(x)
-        '''
         image_name = os.path.basename(self.__X[index])
         if self.__predict:
             y = image_name
         else:
             y = self.__Y[image_name]
         
-        return x_list, y
+        if not self.__branches:
+            x = cv2.imread(self.__X[index])
+            if self.__he_processing:
+                x = self.__HE(x)
+            elif self.__clahe_processing:
+                x = self.__CLAHE(x)
+            x = Image.fromarray(x)
+            x = self.__adapter_transform(x)
+            if self.__mode == 'training':
+                x = self.__data_augmentation(x) 
+            return x, y
+        else:
+            x = self.__adapter_transform(Image.fromarray(cv2.imread(self.__X[index])))
+            x_he = self.__adapter_transform(Image.fromarray(self.__HE(x)))
+            x_clahe = self.__adapter_transform(Image.fromarray(self.__CLAHE(x)))        
+            if self.__mode == 'training':
+                x = self.__data_augmentation(x)
+                x_he = self.__data_augmentation(x_he)
+                x_clahe = self.__data_augmentation(x_clahe)
+            return x, x_he, x_clahe, y
+                
     
     def __len__(self):
         return len(self.__X)
