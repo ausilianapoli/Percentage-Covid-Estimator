@@ -4,7 +4,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 import torch
 import numpy as np
-from Model import DenseNet121, InceptionV3, ResNext
+from Model import DenseNet121, InceptionV3B, ResNext
 from torch import nn
 import os
 from tqdm import tqdm
@@ -80,10 +80,13 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
             
             with torch.set_grad_enabled(mode == 'train'):
                 for i, batch in enumerate(loader[mode]):
-                    x = batch[0].to(device)
+                    #x = batch[0].to(device)
+                    x = []
+                    for item in batch[0]:
+                        x.append(item.to(device))
                     y = batch[1].to(device)
                     
-                    output = network(x.float())
+                    output = network(x)
                     loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
                     
                     if mode == 'train':
@@ -209,8 +212,8 @@ else:
     inception = False
     if opt.network == 'densenet121':
         network = DenseNet121()
-    elif opt.network == 'inceptionv3':
-        network = InceptionV3()
+    elif opt.network == 'inceptionv3b':
+        network = InceptionV3B()
         inception = True
     elif opt.network == 'resnext50':
         network = ResNext()

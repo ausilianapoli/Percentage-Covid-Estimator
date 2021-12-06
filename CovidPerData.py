@@ -8,6 +8,7 @@ import pandas as pd
 from PIL import Image
 import cv2
 import copy
+import torch
 
 SLICE = 0
 PERCENTAGE = 1
@@ -95,6 +96,16 @@ class CovidPerData(Dataset):
                 
     def __getitem__(self, index):
         x = cv2.imread(self.__X[index])
+        x_list = []
+        x_list.append(x)
+        x_list.append(self.__HE(x))
+        x_list.append(self.__CLAHE(x))
+        for i in range(len(x_list)):
+            x_list[i] = Image.fromarray(x_list[i])
+            x_list[i] = self.__adapter_transform(x_list[i])
+            if self.__mode == 'training':
+                x_list[i] = self.__data_augmentation(x_list[i])
+        '''
         if self.__he_processing:
             x = self.__HE(x)
         elif self.__clahe_processing:
@@ -103,13 +114,14 @@ class CovidPerData(Dataset):
         x = self.__adapter_transform(x)
         if self.__mode == 'training':
             x = self.__data_augmentation(x)
+        '''
         image_name = os.path.basename(self.__X[index])
         if self.__predict:
             y = image_name
         else:
             y = self.__Y[image_name]
         
-        return x, y
+        return x_list, y
     
     def __len__(self):
         return len(self.__X)
