@@ -51,11 +51,15 @@ class CovidPerData(Dataset):
     def __extract_data(self):
         slices = self.__Y[SLICE].values
         percentages = self.__Y[PERCENTAGE].values
+        data = {k:v for k,v in zip(slices, percentages)}
+        self.__Y = data
+        ''' ---splitting based on subjects---
         subjects = self.__Y[SUBJECT].values
         data_dict = {k:v for k,v in zip(slices, percentages)}
         subject_dict = {k:v for k,v in zip(slices, subjects)}
         self.__Y = data_dict
         self.__subjects = subject_dict
+        '''
                     
     def __assign_data(self):
         if self.__mode == 'training':
