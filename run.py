@@ -80,8 +80,7 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
             
             with torch.set_grad_enabled(mode == 'train'):
                 for i, batch in enumerate(loader[mode]):
-                    print(batch.shape)
-                    if batch.shape[0] == 2:
+                    if len(batch) == 2:
                         x = batch[0].to(device)
                         y = batch[1].to(device)
                         output = network(x.float())

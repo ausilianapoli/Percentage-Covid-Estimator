@@ -31,7 +31,7 @@ class CovidPerData(Dataset):
         #resize = 299 if inception else 224
         self.__predict = predict
         self.__adapter_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
+        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip(), transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10), transforms.ColorJitter(), transforms.RandomAffine(translate = (30,30), shear = (5)), transforms.GaussianBlur())])
         self.__read_data()
         if self.__mode == 'training' or self.__mode == 'test':
             self.__extract_data()
@@ -110,9 +110,10 @@ class CovidPerData(Dataset):
                 x = self.__data_augmentation(x) 
             return x, y
         else:
-            x = self.__adapter_transform(Image.fromarray(cv2.imread(self.__X[index])))
+            x = cv2.imread(self.__X[index])
             x_he = self.__adapter_transform(Image.fromarray(self.__HE(x)))
-            x_clahe = self.__adapter_transform(Image.fromarray(self.__CLAHE(x)))        
+            x_clahe = self.__adapter_transform(Image.fromarray(self.__CLAHE(x)))
+            x = self.__adapter_transform(Image.fromarray(x))
             if self.__mode == 'training':
                 x = self.__data_augmentation(x)
                 x_he = self.__data_augmentation(x_he)
