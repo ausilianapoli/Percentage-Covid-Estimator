@@ -133,17 +133,9 @@ def predict(network, loader, logdir, exp_name):
     with torch.set_grad_enabled(False):
         for i, batch in enumerate(loader):
             print('Processing batch: {}/{}'.format(i + 1, len(loader)))
-            if batch.shape[0] == 2:
-                x = batch[0].to(device)
-                y = batch[1]
-                output = network(x.float())
-            else:
-                x = batch[0].to(device)
-                x_he = batch[1].to(device)
-                x_clahe = batch[2].to(device)
-                y = batch[3]
-                output = network(x.float(), x_he.float(), x_clahe.float())
-
+            x = batch[0].to(device)
+            y = batch[1]
+            output = network(x.float())
             results[y[0].replace("'", "")] = output.item()
 
     csv.register_dialect('myDialect', delimiter = ',', quoting=csv.QUOTE_NONE)
