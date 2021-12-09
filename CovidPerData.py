@@ -31,7 +31,7 @@ class CovidPerData(Dataset):
         #resize = 299 if inception else 224
         self.__predict = predict
         self.__adapter_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip(), transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10), transforms.ColorJitter(), transforms.RandomAffine(translate = (30,30), shear = (5)), transforms.GaussianBlur())])
+        self.__data_augmentation = transforms.Compose([transforms.GaussianBlur(kernel_size = (5, 5)), transforms.ColorJitter(), transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip(), transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
         self.__read_data()
         if self.__mode == 'training' or self.__mode == 'test':
             self.__extract_data()
@@ -55,7 +55,6 @@ class CovidPerData(Dataset):
         self.__Y = data
         ''' ---splitting based on subjects---
         subjects = self.__Y[SUBJECT].values
-        data_dict = {k:v for k,v in zip(slices, percentages)}
         subject_dict = {k:v for k,v in zip(slices, subjects)}
         self.__Y = data_dict
         self.__subjects = subject_dict
@@ -70,6 +69,9 @@ class CovidPerData(Dataset):
     def __splitting_data(self): #to have all slices of one subject in only set
         validation_len = (len(self.__X) * 10) // 100
         self.__X_training, self.__X_validation = None, None
+        self.__X_training = self.__X[validation_len:]
+        self.__X_validation = self.__X[:validation_len]
+        '''
         dirname = os.path.dirname(self.__X[0])
         subjects = np.unique(list(self.__subjects.values()))
         self.__X_validation = []
@@ -81,6 +83,7 @@ class CovidPerData(Dataset):
                     self.__X_validation.append(os.path.join(dirname,k))
                     self.__subjects.pop(k)
         self.__X_training = list(map(lambda x: os.path.join(dirname, x), list(self.__subjects.keys())))
+        '''
 
     def __HE(self, img):
         new_img = np.zeros(img.shape)
