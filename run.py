@@ -1,11 +1,12 @@
 from CovidPerData import CovidPerData
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset, SubsetRandomSampler
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
 import torch
 import numpy as np
-from Model import DenseNet121, InceptionV3, ResNext, InceptionV3Branches
+from Model import DenseNet121, InceptionV3, ResNext
 from torch import nn
+from sklearn.model_selection import KFold
 import os
 from tqdm import tqdm
 import argparse
@@ -118,7 +119,6 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                     'scheduler': scheduler.state_dict(),
                     'criterion': criterion_parameter
                 }, os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, e + 1))
-            
 
 def predict(network, loader, logdir, exp_name):
     network.eval()
@@ -187,9 +187,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot)')  
 parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
+parser.add_argument('--kfold', type=int, default=0, help='k-fold Cross Validation')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
-parser.add_argument('--batch', type=int, default=16, help='Batch size')  
+parser.add_argument('--batch', type=int, default=20, help='Batch size')  
 parser.add_argument('--epochs', type=int, default=50, help='Epochs') 
 parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
 parser.add_argument('--wd', type=float, default=0.0, help='Weight decay')
@@ -200,6 +201,7 @@ parser.add_argument('--he', action = 'store_true', help = 'If True, apply HE pre
 parser.add_argument('--clahe', action = 'store_true', help = 'If True, apply CLAHE preprocessing')
 
 opt = parser.parse_args()
+torch.manual_seed(1702)
 
 if opt.action == 'plot':
     plot_learning_curve(opt.data, 'NN')
@@ -220,7 +222,7 @@ else:
     network.to(device)
     exp_name = opt.expname
     logdir = opt.logs
-    if opt.action == 'training':
+    if opt.action == 'train':
         criterion_parameter = 15
         try:
             criterion = nn.HuberLoss(delta = criterion_parameter)
@@ -235,14 +237,29 @@ else:
         note = opt.note
         save = True
         dataset_train = CovidPerData(opt.data, mode = 'training', he_processing = opt.he, clahe_processing = opt.clahe)
-        loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
         dataset_test = CovidPerData(opt.data, mode = 'test', he_processing = opt.he, clahe_processing = opt.clahe)
-        loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-        loader = {
-                'train' : loader_train,
-                'test': loader_test
-                }
-        train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+        if opt.kfold == 0:
+            loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
+            loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
+            loader = {
+                    'train' : loader_train,
+                    'test': loader_test
+                    }
+            train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+        else:
+            dataset = ConcatDataset([dataset_train, dataset_test])
+            kfold = KFold(n_splits = opt.kfold, shuffle = True)
+            for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
+                print('FOLD {}'.format(fold))
+                train_subsampler = SubsetRandomSampler(train_ids)
+                test_subsampler = SubsetRandomSampler(test_ids)
+                loader_train = DataLoader(dataset, batch_size = opt.batch, num_workers = opt.workers, sampler = train_subsampler)
+                loader_test = DataLoader(dataset, batch_size = opt.batch, num_workers = opt.workers, sampler = test_subsampler)
+                loader = {
+                    'train' : loader_train,
+                    'test': loader_test
+                    }
+                train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
     elif opt.action == 'predict':
         dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
