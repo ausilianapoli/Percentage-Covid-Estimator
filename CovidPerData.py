@@ -16,7 +16,7 @@ SUBJECT = 2
 
 class CovidPerData(Dataset):
     
-    def __init__(self, data_path = None, mode = 'training', branches = False, predict = False, he_processing = False, clahe_processing = False):
+    def __init__(self, data_path = None, mode = 'training', predict = False, he_processing = False, clahe_processing = False):
         self.__data_path = data_path
         self.__mode = mode
         self.__labels_path = None
@@ -25,7 +25,6 @@ class CovidPerData(Dataset):
         self.__subjects = None
         self.__he_processing = he_processing
         self.__clahe_processing = clahe_processing
-        self.__branches = branches
         np.random.seed(1702)
         random.seed(1702)
         #resize = 299 if inception else 224
@@ -104,28 +103,17 @@ class CovidPerData(Dataset):
             y = image_name
         else:
             y = self.__Y[image_name]
-        
-        if not self.__branches:
-            x = cv2.imread(self.__X[index])
-            if self.__he_processing:
-                x = self.__HE(x)
-            elif self.__clahe_processing:
-                x = self.__CLAHE(x)
-            x = Image.fromarray(x)
-            x = self.__adapter_transform(x)
-            if self.__mode == 'training':
-                x = self.__data_augmentation(x) 
-            return x, y
-        else:
-            x = cv2.imread(self.__X[index])
-            x_he = self.__adapter_transform(Image.fromarray(self.__HE(x)))
-            x_clahe = self.__adapter_transform(Image.fromarray(self.__CLAHE(x)))
-            x = self.__adapter_transform(Image.fromarray(x))
-            if self.__mode == 'training':
-                x = self.__data_augmentation(x)
-                x_he = self.__data_augmentation(x_he)
-                x_clahe = self.__data_augmentation(x_clahe)
-            return x, x_he, x_clahe, y
+
+        x = cv2.imread(self.__X[index])
+        if self.__he_processing:
+            x = self.__HE(x)
+        elif self.__clahe_processing:
+            x = self.__CLAHE(x)
+        x = Image.fromarray(x)
+        x = self.__adapter_transform(x)
+        if self.__mode == 'training':
+            x = self.__data_augmentation(x) 
+        return x, y
                 
     
     def __len__(self):
