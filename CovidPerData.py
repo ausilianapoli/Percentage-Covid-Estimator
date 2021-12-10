@@ -30,7 +30,7 @@ class CovidPerData(Dataset):
         #resize = 299 if inception else 224
         self.__predict = predict
         self.__adapter_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-        self.__data_augmentation = transforms.Compose([transforms.GaussianBlur(kernel_size = (5, 5)), transforms.ColorJitter(), transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip(), transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10))])
+        self.__data_augmentation = transforms.Compose([transforms.GaussianBlur(kernel_size = (5, 5)), transforms.ColorJitter(), transforms.RandomHorizontalFlip(),transforms.RandomVerticalFlip(), transforms.RandomResizedCrop(512-20), transforms.Resize(512), transforms.RandomRotation((-10, +10)), transforms.RandomAffine(degrees = 0, shear = (10), fillcolor = 0)])
         self.__read_data()
         if self.__mode == 'training' or self.__mode == 'test':
             self.__extract_data()
