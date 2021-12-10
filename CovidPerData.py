@@ -96,6 +96,17 @@ class CovidPerData(Dataset):
         for i in range(img.shape[2]):
             new_img[:,:,i] = clahe.apply(img[:,:,i])
         return np.uint8(new_img)
+
+    def __mixup(self, x, y):
+        random_idx = random.randint(0, self.__len__() - 1)
+        random_image_name = os.path.basename(self.__X[random_idx])
+        random_x = self.__adapter_transform(Image.open(self.__X[random_idx]).convert('RGB'))
+        random_y = self.__Y[random_image_name]
+        alpha = 0.2
+        lam = np.random.beta(alpha, alpha)
+        mixed_x = lam * x + (1 - lam) * random_x
+        mixed_y = lam * y + (1 - lam) * random_y
+        return mixed_x, mixed_y
                 
     def __getitem__(self, index):
         image_name = os.path.basename(self.__X[index])
@@ -112,7 +123,9 @@ class CovidPerData(Dataset):
         x = Image.fromarray(x)
         x = self.__adapter_transform(x)
         if self.__mode == 'training':
-            x = self.__data_augmentation(x) 
+            x = self.__data_augmentation(x)
+            if random.random() > 0.5:
+                x, y = self.__mixup(x, y)
         return x, y
                 
     
