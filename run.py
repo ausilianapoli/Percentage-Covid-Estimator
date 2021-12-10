@@ -80,16 +80,9 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
             
             with torch.set_grad_enabled(mode == 'train'):
                 for i, batch in enumerate(loader[mode]):
-                    if len(batch) == 2:
-                        x = batch[0].to(device)
-                        y = batch[1].to(device)
-                        output = network(x.float())
-                    else:
-                        x = batch[0].to(device)
-                        x_he = batch[1].to(device)
-                        x_clahe = batch[2].to(device)
-                        y = batch[3].to(device)
-                        output = network(x.float(), x_he.float(), x_clahe.float())
+                    x = batch[0].to(device)
+                    y = batch[1].to(device)
+                    output = network(x.float())
                     loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
                     
                     if mode == 'train':
@@ -193,7 +186,7 @@ def plot_learning_curve(filename, title):
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot)')  
-parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50, inceptionv3b)')
+parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=16, help='Batch size')  
@@ -211,7 +204,6 @@ opt = parser.parse_args()
 if opt.action == 'plot':
     plot_learning_curve(opt.data, 'NN')
 else:
-    branches = False
     if opt.network == 'densenet121':
         network = DenseNet121()
     elif opt.network == 'inceptionv3':
@@ -219,9 +211,6 @@ else:
         inception = True
     elif opt.network == 'resnext50':
         network = ResNext()
-    elif opt.network == 'inceptionv3b':
-        network = InceptionV3Branches()
-        branches = True
     weights = opt.weights
     if weights != '':
         print('Use model from checkpoint: ', os.path.basename(weights))
@@ -245,9 +234,9 @@ else:
         epochs = opt.epochs
         note = opt.note
         save = True
-        dataset_train = CovidPerData(opt.data, mode = 'training', branches = branches, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset_train = CovidPerData(opt.data, mode = 'training', he_processing = opt.he, clahe_processing = opt.clahe)
         loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
-        dataset_test = CovidPerData(opt.data, mode = 'test', branches = branches, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset_test = CovidPerData(opt.data, mode = 'test', he_processing = opt.he, clahe_processing = opt.clahe)
         loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
         loader = {
                 'train' : loader_train,
@@ -255,7 +244,7 @@ else:
                 }
         train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
     elif opt.action == 'predict':
-        dataset = CovidPerData(opt.data, mode = 'evaluate', branches = branches, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
         predict(network, loader, logdir, exp_name)
     elif opt.action == 'evaluate':

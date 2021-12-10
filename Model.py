@@ -40,28 +40,3 @@ class ResNext(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x#self.sigmoid(x)
-    
-class InceptionV3Branches(nn.Module):
-
-    def __init__(self, dropout = 0.5, momentum = 0.9):
-        super(InceptionV3Branches, self).__init__()
-        self.model = models.inception_v3(pretrained = True, progress = False, aux_logits = False)
-        self.model.fc = nn.Linear(2048, 1) #changing last layer
-        modules = list(self.model.children())
-        self.head = nn.Sequential(*modules[:7])
-        self.body = nn.Sequential(*modules[7:])
-        #print('HEAD ----------------')
-        #print(self.head)
-        #print('BODY ----------------')
-        #print(self.body)
-        
-    def forward(self, x, x_he, x_clahe):
-        x = self.head(x)
-        x_he = self.head(x_he)
-        x_clahe = self.head(x_clahe)
-        #print(x_clahe.shape)
-        x_mixed = torch.cat((x, x_he, x_clahe), 0)
-        x_mixed = x + x_he + x_clahe
-        #print(x_mixed.shape)
-        x_mixed = self.body(x_mixed)
-        return x_mixed
