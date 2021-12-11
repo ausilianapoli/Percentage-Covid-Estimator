@@ -83,7 +83,7 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                 for i, batch in enumerate(loader[mode]):
                     x = batch[0].to(device)
                     y = batch[1].to(device)
-                    output = network(x.float())
+                    output = torch.round(network(x.float()))
                     loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
                     
                     if mode == 'train':
@@ -128,8 +128,8 @@ def predict(network, loader, logdir, exp_name):
             print('Processing batch: {}/{}'.format(i + 1, len(loader)))
             x = batch[0].to(device)
             y = batch[1]
-            output = network(x.float())
-            results[y[0].replace("'", "")] = output.item()
+            output = torch.round(network(x.float()))
+            results[y[0].replace("'", "").replace(".", ".0")] = output.item()
 
     csv.register_dialect('myDialect', delimiter = ',', quoting=csv.QUOTE_NONE)
     with open(os.path.join(logdir, exp_name, 'predictions.csv'), 'w') as f:
