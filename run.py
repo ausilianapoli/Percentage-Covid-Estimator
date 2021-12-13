@@ -83,7 +83,7 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                 for i, batch in enumerate(loader[mode]):
                     x = batch[0].to(device)
                     y = batch[1].to(device)
-                    output = torch.round(network(x.float()))
+                    output = network(x.float())
                     loss = criterion(output.float(), y.float().unsqueeze(dim = 1))
                     
                     if mode == 'train':
