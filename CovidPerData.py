@@ -99,7 +99,6 @@ class CovidPerData(Dataset):
         self.__X.append(os.path.join(os.path.join(dirname, x)))
 
     def __balance_data(self):
-        print('before ', len(self.__X))
         buckets = self.__create_buckets()
         max_length = self.__get_maximum(buckets)
         for b in buckets:
@@ -107,7 +106,6 @@ class CovidPerData(Dataset):
                 for i in range(max_length - len(b)):
                     random_idx = random.randint(0, len(b) - 1)
                     self.__append_sample(b[random_idx])
-        print('after ', len(self.__X))
 
     def __splitting_data(self): #to have all slices of one subject in only set
         validation_len = (len(self.__X) * 10) // 100

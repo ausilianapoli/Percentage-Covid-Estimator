@@ -50,6 +50,8 @@ def pearson_correlation(predictions, gt):
 def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
     loss_meter = AverageValueMeter()
     metric_meter = AverageValueMeter()
+    best_epoch = None
+    best_metric = None
     
     epochs_done = 0
     scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
@@ -101,6 +103,14 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
             logging_file.close()
             print('\n',logging)
 
+            try:
+                if(metric_meter.value() < best_metric):
+                    best_metric = metric_meter.value()
+                    best_epoch = e + 1
+            except:
+                best_metric = metric_meter.value()
+                best_epoch = e + 1
+
         scheduler.step()
         try:
             if criterion.delta > 1:
@@ -119,6 +129,8 @@ def train(network, loader, criterion, epochs, exp_name, logdir, weights, save):
                     'scheduler': scheduler.state_dict(),
                     'criterion': criterion_parameter
                 }, os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, e + 1))
+        
+    return best_epoch
 
 def predict(network, loader, logdir, exp_name):
     network.eval()
@@ -185,7 +197,7 @@ def plot_learning_curve(filename, title):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
-parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot)')  
+parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot, run)')  
 parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
 parser.add_argument('--kfold', type=int, default=0, help='k-fold Cross Validation')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
@@ -222,7 +234,7 @@ else:
     network.to(device)
     exp_name = opt.expname
     logdir = opt.logs
-    if opt.action == 'train':
+    if opt.action == 'train' or opt.action == 'run':
         criterion_parameter = 15
         try:
             criterion = nn.HuberLoss(delta = criterion_parameter)
@@ -245,7 +257,7 @@ else:
                     'train' : loader_train,
                     'test': loader_test
                     }
-            train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+            best_epoch = train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
         else:
             dataset = ConcatDataset([dataset_train, dataset_test])
             kfold = KFold(n_splits = opt.kfold, shuffle = True)
@@ -259,7 +271,15 @@ else:
                     'train' : loader_train,
                     'test': loader_test
                     }
-                train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+                best_epoch = train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+        if opt.action == 'run':
+            weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
+            print('Use model from checkpoint: ', os.path.basename(weights))
+            checkpoint = torch.load(weights)
+            network.load_state_dict(checkpoint['weights'])
+            dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+            loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
+            predict(network, loader, logdir, exp_name)
     elif opt.action == 'predict':
         dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
