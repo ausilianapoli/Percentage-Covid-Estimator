@@ -142,7 +142,7 @@ class CovidPerData(Dataset):
     def __mixup(self, x, y):
         random_idx = random.randint(0, self.__len__() - 1)
         random_image_name = os.path.basename(self.__X[random_idx])
-        random_x = self.__data_augmentation(self.__adapter_transform(Image.open(self.__X[random_idx]).convert('RGB')))
+        random_x = self.__adapter_transform(Image.open(self.__X[random_idx]).convert('RGB'))
         random_y = self.__Y[random_image_name]
         alpha = 0.2
         lam = np.random.beta(alpha, alpha)

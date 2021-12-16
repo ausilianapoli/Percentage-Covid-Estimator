@@ -271,7 +271,15 @@ else:
                     'train' : loader_train,
                     'test': loader_test
                     }
-                best_epoch = train(network, loader, criterion, epochs, exp_name, logdir, weights, save)
+                exp_name_fold = exp_name + str(fold)
+                best_epoch = train(network, loader, criterion, epochs, exp_name_fold, logdir, weights, save)
+                weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
+                print('Use model from checkpoint: ', os.path.basename(weights))
+                checkpoint = torch.load(weights)
+                network.load_state_dict(checkpoint['weights'])
+                dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+                loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
+                predict(network, loader, logdir, exp_name_fold)
         if opt.action == 'run':
             weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
             print('Use model from checkpoint: ', os.path.basename(weights))
