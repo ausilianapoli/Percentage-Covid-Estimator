@@ -199,7 +199,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
 parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot, run)')  
 parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
-parser.add_argument('--kfold', type=int, default=0, help='k-fold Cross Validation')
+parser.add_argument('--kfold', type=int, default=1, help='k-fold Cross Validation')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
 parser.add_argument('--weights', type=str, default='', help='Checkpoints dir')  
 parser.add_argument('--batch', type=int, default=20, help='Batch size')  
@@ -218,6 +218,7 @@ torch.manual_seed(1702)
 if opt.action == 'plot':
     plot_learning_curve(opt.data, 'NN')
 else:
+    inception = False
     if opt.network == 'densenet121':
         network = DenseNet121()
     elif opt.network == 'inceptionv3':
@@ -248,9 +249,9 @@ else:
         epochs = opt.epochs
         note = opt.note
         save = True
-        dataset_train = CovidPerData(opt.data, mode = 'training', he_processing = opt.he, clahe_processing = opt.clahe)
-        dataset_test = CovidPerData(opt.data, mode = 'test', he_processing = opt.he, clahe_processing = opt.clahe)
-        if opt.kfold == 0:
+        dataset_train = CovidPerData(opt.data, mode = 'training', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset_test = CovidPerData(opt.data, mode = 'test', inception = inception, he_processing = opt.he, clahe_processing = opt.clahe)
+        if opt.kfold == 1:
             loader_train = DataLoader(dataset_train, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
             loader_test = DataLoader(dataset_test, batch_size = opt.batch, num_workers = opt.workers, shuffle = True)
             loader = {
@@ -273,23 +274,24 @@ else:
                     }
                 exp_name_fold = exp_name + str(fold)
                 best_epoch = train(network, loader, criterion, epochs, exp_name_fold, logdir, weights, save)
-                weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
-                print('Use model from checkpoint: ', os.path.basename(weights))
-                checkpoint = torch.load(weights)
-                network.load_state_dict(checkpoint['weights'])
-                dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
-                loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
-                predict(network, loader, logdir, exp_name_fold)
+                if opt.action == 'run':
+                    weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
+                    print('Use model from checkpoint: ', os.path.basename(weights))
+                    checkpoint = torch.load(weights)
+                    network.load_state_dict(checkpoint['weights'])
+                    dataset = CovidPerData(opt.data, mode = 'evaluate', inception = inception, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+                    loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
+                    predict(network, loader, logdir, exp_name_fold)
         if opt.action == 'run':
             weights = os.path.join(logdir, exp_name) + '/%s-%d.tar'%(exp_name, best_epoch)
             print('Use model from checkpoint: ', os.path.basename(weights))
             checkpoint = torch.load(weights)
             network.load_state_dict(checkpoint['weights'])
-            dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+            dataset = CovidPerData(opt.data, mode = 'evaluate', inception = inception, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
             loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
             predict(network, loader, logdir, exp_name)
     elif opt.action == 'predict':
-        dataset = CovidPerData(opt.data, mode = 'evaluate', predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
+        dataset = CovidPerData(opt.data, mode = 'evaluate', inception = inception, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
         predict(network, loader, logdir, exp_name)
     elif opt.action == 'evaluate':
