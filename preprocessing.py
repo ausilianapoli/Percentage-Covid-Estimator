@@ -29,6 +29,7 @@ if opt.hog:
     hog = cv2.HOGDescriptor()
     for i in tqdm(list_of_images):
         image = cv2.imread(i, 0)
+        image = cv2.resize(image, (224, 224))
         edges = cv2.Canny(image, 100, 200)
         hog_features = hog.compute(edges)
         hog_features = np.reshape(hog_features, hog_features.shape[0])
