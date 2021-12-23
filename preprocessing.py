@@ -1,11 +1,13 @@
 import os
 import cv2
 import glob
+import torch
 import argparse
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 from sklearn.cluster import KMeans
+from kmeans_pytorch import kmeans
 
 def get_list_of_files(dir, ext):
     return glob.glob(os.path.join(dir, ext))
@@ -23,6 +25,8 @@ Path(opt.output).mkdir(parents=True, exist_ok=True)
 Path(opt.clusters).mkdir(parents=True, exist_ok=True)
 for k in range(opt.kmeans):
     Path(os.path.join(opt.clusters, str(k))).mkdir(parents=True, exist_ok=True)
+    
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 list_of_images = get_list_of_files(opt.data, '*.png')
 if opt.hog:
@@ -42,6 +46,9 @@ for i in tqdm(list_of_features):
     dict_of_hogs[i] = np.load(i)
 list_of_hogs = list(dict_of_hogs.values())
 list_of_hogs = np.asarray(list_of_hogs, dtype = object)
+#list_of_hogs = torch.from_numpy(list_of_hogs)
+#cluster_ids_x, cluster_centers = kmeans(
+#    X=list_of_hogs, num_clusters=opt.kmeans, distance='euclidean', device=device)
 kmeans.fit(list_of_hogs)
 clusters = kmeans.labels_
 for c in zip(dict_of_hogs.keys(), clusters):
