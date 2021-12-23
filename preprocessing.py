@@ -3,6 +3,7 @@ import cv2
 import glob
 import argparse
 import numpy as np
+from tqdm import tqdm
 from pathlib import Path
 from sklearn.cluster import KMeans
 
@@ -26,7 +27,7 @@ for k in range(opt.kmeans):
 list_of_images = get_list_of_files(opt.data, '*.png')
 if opt.hog:
     hog = cv2.HOGDescriptor()
-    for i in list_of_images:
+    for i in tqdm(list_of_images):
         image = cv2.imread(i, 0)
         edges = cv2.Canny(image, 100, 200)
         hog_features = hog.compute(edges)
@@ -36,7 +37,7 @@ if opt.hog:
 list_of_features = get_list_of_files(opt.output, '*.npy')
 kmeans = KMeans(n_clusters = opt.kmeans, random_state=0)
 dict_of_hogs = dict()
-for i in list_of_features:
+for i in tqdm(list_of_features):
     dict_of_hogs[i] = np.load(i)
 list_of_hogs = list(dict_of_hogs.values())
 list_of_hogs = np.asarray(list_of_hogs, dtype = object)
@@ -46,4 +47,5 @@ for c in zip(dict_of_hogs.keys(), clusters):
     filename = os.path.basename(c[0]).replace('.npy', '.png')
     src = os.path.join(opt.data, filename)
     dst = os.path.join(opt.clusters, str(c[1]), filename)
+    print(src, dst)
     os.link(src, dst)
