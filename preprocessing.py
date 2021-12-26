@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 from sklearn.cluster import KMeans
-from kmeans_pytorch import kmeans
+#from kmeans_pytorch import kmeans
 
 def get_list_of_files(dir, ext):
     return glob.glob(os.path.join(dir, ext))
