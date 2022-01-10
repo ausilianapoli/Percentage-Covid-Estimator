@@ -294,5 +294,3 @@ else:
         dataset = CovidPerData(opt.data, mode = 'evaluate', inception = inception, predict = True, he_processing = opt.he, clahe_processing = opt.clahe)
         loader = DataLoader(dataset, batch_size = 1, num_workers = opt.workers)
         predict(network, loader, logdir, exp_name)
-    elif opt.action == 'evaluate':
-        print('TODO')
