@@ -197,7 +197,7 @@ def plot_learning_curve(filename, title):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str, help='Data dir')  
-parser.add_argument('--action', type=str, help='Action to run (train, predict, evaluate, plot, run)')  
+parser.add_argument('--action', type=str, help='Action to run (train, predict, plot, run)')  
 parser.add_argument('--network', type=str, help='Network model (densenet121, inceptionv3, resnext50)')
 parser.add_argument('--kfold', type=int, default=1, help='k-fold Cross Validation')
 parser.add_argument('--logs', type=str, default='logs', help='Logs dir')
