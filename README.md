@@ -28,9 +28,10 @@ Please cite the following paper if you use the data or pre-trained CNN models.
 @inproceedings{napolispatafora2022,  
   title={*Mixup* Data Augmentation for COVID-19 Infection Percentage Estimation},  
   author={Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano},  
-  booktitle={Proceedings of the International Conference on Image Analysis and Processing (ICIAP 2021)},  
   year={2022}  
 }
+
+The conference will be held in May 2022 and the paper has been already accepted.
 
 ## Acknowledgements and License
 The pretrained models can be used under the Creative Common License (Attribution CC BY). Please give appropriate credit, such as providing a link to our paper and to the project web page. 
