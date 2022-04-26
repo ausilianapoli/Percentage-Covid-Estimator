@@ -9,22 +9,27 @@ The challenge requires deep learning algorithms for predicting the percentage of
 ## Requirements
 - python 3.7;
 - pytorch 1.7;
-- torchvision 0.8.
+- torchvision 0.8.  
+
 The model has been trained on GPU Quadro Quadro RTX 6000.
 
 ## Usage
-**Case 1)** use of pretrained weights to make inference:
+**Case 1**  
+Use of pretrained weights to make inference:  
 `python run.py --data /directory/of/your/data --action predict --network inceptionv3 --weights best-weights.tar`  
-**Case 2)** train of the network to replicate our results:
+
+**Case 2**  
+Train of the network to replicate our results:  
 `python run.py --data /directory/of/your/data --action train --network inceptionv3 --batch 20 --epochs 50 --lr 0.0001 --wd 0.5`  
 
 ## Reference
-Please cite the following paper if you use the data or pre-trained CNN models.
-@inproceedings{napolispatafora2022,
-  title={*Mixup* Data Augmentation for COVID-19 Infection Percentage Estimation},
-  author={Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano},
-  booktitle={Proceedings of the International Conference on Image Analysis and Processing (ICIAP 2021)},
-  year={2022}
+Please cite the following paper if you use the data or pre-trained CNN models.  
+
+@inproceedings{napolispatafora2022,  
+  title={*Mixup* Data Augmentation for COVID-19 Infection Percentage Estimation},  
+  author={Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano},  
+  booktitle={Proceedings of the International Conference on Image Analysis and Processing (ICIAP 2021)},  
+  year={2022}  
 }
 
 ## Acknowledgements and License
