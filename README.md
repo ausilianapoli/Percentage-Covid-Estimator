@@ -25,13 +25,13 @@ Train of the network to replicate our results:
 ## Reference
 Please cite the following paper if you use the data or pre-trained CNN models.  
 
-@InProceedings{10.1007/978-3-031-13324-4_43,
-  author="Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano",
-  title="Mixup Data Augmentation for COVID-19 Infection Percentage Estimation",
-  booktitle="Image Analysis and Processing. ICIAP 2022 Workshops",
-  year="2022",
-  publisher="Springer International Publishing",
-  pages="508--519",
+@InProceedings{10.1007/978-3-031-13324-4_43,  
+  author="Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano",  
+  title="Mixup Data Augmentation for COVID-19 Infection Percentage Estimation",  
+  booktitle="Image Analysis and Processing. ICIAP 2022 Workshops",  
+  year="2022",  
+  publisher="Springer International Publishing",  
+  pages="508--519",  
 }  
 
 ## Acknowledgements and License
