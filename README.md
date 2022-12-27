@@ -23,7 +23,7 @@ Train of the network to replicate our results:
 `python run.py --data /directory/of/your/data --action train --network inceptionv3 --batch 20 --epochs 50 --lr 0.0001 --wd 0.5`  
 
 ## Reference
-Please cite the following [paper](<https://link.springer.com/chapter/10.1007/978-3-031-13324-4_43) if you use the data or pre-trained CNN models.  
+Please cite the following [paper](https://link.springer.com/chapter/10.1007/978-3-031-13324-4_43) if you use the data or pre-trained CNN models.  
 
 @InProceedings{10.1007/978-3-031-13324-4_43,  
   author="Napoli Spatafora, Maria Ausilia and Ortis, Alessandro and Battiato, Sebastiano",  
